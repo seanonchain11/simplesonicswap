@@ -1,52 +1,68 @@
 'use client'
 
-import { Box, Button, Container, Heading, Text, VStack } from '@chakra-ui/react'
+import {
+  Box,
+  Container,
+  Flex,
+  Image,
+  Link as ChakraLink,
+  Stack,
+  VStack,
+} from '@chakra-ui/react'
 import Link from 'next/link'
 
 export default function Home() {
   return (
-    <Container maxW="container.xl" py={20}>
-      <VStack spacing={8} align="center" justify="center" minH="80vh">
-        <Box
-          position="absolute"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          bgGradient="linear(to-r, #F7931A20, #5B3BE820)"
-          zIndex={-1}
-          pointerEvents="none"
-        />
-        
-        <Heading
-          as="h1"
-          size="4xl"
-          bgGradient="linear(to-r, #F7931A, #5B3BE8)"
-          bgClip="text"
-          fontWeight="extrabold"
-        >
-          SimpleSonicSwap
-        </Heading>
-        
-        <Text fontSize="xl" textAlign="center" maxW="600px">
-          Seamlessly swap between native Sonic ($S) and wrapped Sonic ($wS) tokens
-          with our intuitive interface powered by Rayidum AMM protocol.
-        </Text>
-        
-        <Link href="/app" passHref>
-          <Button
-            size="lg"
-            bgGradient="linear(to-r, #F7931A, #5B3BE8)"
-            color="white"
-            _hover={{
-              bgGradient: "linear(to-r, #E68219, #4A30D7)",
-            }}
-            px={8}
-          >
-            Launch App
-          </Button>
-        </Link>
-      </VStack>
-    </Container>
+    <Box
+      minH="100vh"
+      position="relative"
+      bgImage="url('/landingbackground.png')"
+      bgSize="cover"
+      bgPosition="center"
+      bgRepeat="no-repeat"
+    >
+      <Container maxW="container.xl" py={8}>
+        {/* Header */}
+        <Flex justify="center" mb={16}>
+          <Image
+            src="/simplesonicswaplogo.png"
+            alt="SimpleSonicSwap Logo"
+            h="60px"
+          />
+        </Flex>
+
+        {/* Main Content */}
+        <VStack spacing={12} align="center">
+          <Link href="/app" passHref>
+            <Image
+              src="/launchappbutton.png"
+              alt="Launch App"
+              h="60px"
+              _hover={{ transform: 'scale(1.05)' }}
+              transition="transform 0.2s"
+              cursor="pointer"
+            />
+          </Link>
+        </VStack>
+
+        {/* Footer */}
+        <Flex justify="center" position="fixed" bottom="8" left="0" right="0">
+          <Stack direction="row" spacing={6}>
+            <ChakraLink href="https://twitter.com" isExternal>
+              <Image src="/X.png" alt="Twitter" h="40px" />
+            </ChakraLink>
+            <ChakraLink href="https://discord.com" isExternal>
+              <Image src="/Discord Bubble.png" alt="Discord" h="40px" />
+            </ChakraLink>
+            <ChakraLink href="https://t.me" isExternal>
+              <Image src="/Telegram.png" alt="Telegram" h="40px" />
+            </ChakraLink>
+            <ChakraLink href="https://github.com" isExternal>
+              <Image src="/GitHub.png" alt="GitHub" h="40px" />
+            </ChakraLink>
+          </Stack>
+        </Flex>
+      </Container>
+    </Box>
   )
 } 

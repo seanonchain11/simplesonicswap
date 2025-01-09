@@ -1,6 +1,8 @@
+import { Analytics } from '@vercel/analytics/react'
 import { Providers } from './providers'
+import { Metadata } from 'next'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'SimpleSonicSwap',
   description: 'Swap between native Sonic ($S) and wrapped Sonic ($wS) tokens',
 }
@@ -13,7 +15,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Analytics />
+        </Providers>
       </body>
     </html>
   )

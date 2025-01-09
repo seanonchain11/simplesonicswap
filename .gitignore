@@ -33,11 +33,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Hardhat
-cache
-artifacts
-typechain-types
+# hardhat
+cache/
+artifacts/
 
 # IDE
-.idea
-.vscode 
+.idea/
+.vscode/
+
+# contract verification
+flattened.sol
+verify_*.sol 

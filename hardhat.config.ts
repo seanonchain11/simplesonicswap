@@ -1,31 +1,38 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
-import * as dotenv from "dotenv";
+require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-verify");
+require("dotenv").config();
 
-dotenv.config();
-
-const config: HardhatUserConfig = {
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
   solidity: {
     version: "0.8.20",
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200,
-      },
-    },
+        runs: 200
+      }
+    }
   },
   networks: {
     sonic: {
-      url: process.env.SONIC_MAINNET_RPC || "https://rpc.soniclabs.com",
+      url: "https://rpc.soniclabs.com",
       chainId: 146,
-      accounts: process.env.SONIC_PRIVATE_KEY ? [process.env.SONIC_PRIVATE_KEY] : [],
-    },
+      accounts: [process.env.PRIVATE_KEY || ""]
+    }
   },
   etherscan: {
     apiKey: {
-      sonic: process.env.SONICSCAN_API_KEY || "",
+      sonic: "H8MUPSYH1QDBERJCUKSD8WKDYFBRZ1SAEE"
     },
-  },
-};
-
-export default config; 
+    customChains: [
+      {
+        network: "sonic",
+        chainId: 146,
+        urls: {
+          apiURL: "https://sonicscan.io/api",
+          browserURL: "https://sonicscan.io"
+        }
+      }
+    ]
+  }
+}; 

@@ -1,0 +1,38 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="250" cy="250" r="240" fill="url(#bg-gradient)" opacity="0.1"/>
+  
+  <!-- Left Token -->
+  <circle cx="150" cy="250" r="80" fill="url(#token1-gradient)"/>
+  <text x="150" y="265" text-anchor="middle" fill="white" font-family="Arial" font-size="40" font-weight="bold">S</text>
+  
+  <!-- Right Token -->
+  <circle cx="350" cy="250" r="80" fill="url(#token2-gradient)"/>
+  <text x="350" y="265" text-anchor="middle" fill="white" font-family="Arial" font-size="40" font-weight="bold">wS</text>
+  
+  <!-- Arrows -->
+  <path d="M250 200 L300 250 L250 300" stroke="url(#arrow-gradient)" stroke-width="4" fill="none"/>
+  <path d="M250 300 L200 250 L250 200" stroke="url(#arrow-gradient)" stroke-width="4" fill="none"/>
+  
+  <defs>
+    <linearGradient id="bg-gradient" x1="0" y1="0" x2="500" y2="500">
+      <stop stop-color="#F7931A"/>
+      <stop offset="1" stop-color="#5B3BE8"/>
+    </linearGradient>
+    
+    <linearGradient id="token1-gradient" x1="70" y1="170" x2="230" y2="330">
+      <stop stop-color="#F7931A"/>
+      <stop offset="1" stop-color="#E68219"/>
+    </linearGradient>
+    
+    <linearGradient id="token2-gradient" x1="270" y1="170" x2="430" y2="330">
+      <stop stop-color="#5B3BE8"/>
+      <stop offset="1" stop-color="#4A30D7"/>
+    </linearGradient>
+    
+    <linearGradient id="arrow-gradient" x1="200" y1="200" x2="300" y2="300">
+      <stop stop-color="#F7931A"/>
+      <stop offset="1" stop-color="#5B3BE8"/>
+    </linearGradient>
+  </defs>
+</svg> 
