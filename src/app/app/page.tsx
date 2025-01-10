@@ -10,6 +10,7 @@ import {
   VStack,
   useToast,
   useDisclosure,
+  Button,
 } from '@chakra-ui/react'
 import { motion } from 'framer-motion'
 import TokenInput from '@/components/swap/TokenInput'
@@ -226,15 +227,45 @@ export default function SwapInterface() {
             height={40}
             style={{ objectFit: 'contain' }}
           />
-          <Image
-            src={isConnected ? "/connectedbutton.png" : "/connectwalletbutton.png"}
-            alt={isConnected ? "Connected" : "Connect Wallet"}
-            h="50px"
-            cursor="pointer"
-            onClick={!isConnected ? connectWallet : undefined}
-            _hover={{ transform: 'scale(1.05)' }}
-            transition="transform 0.2s"
-          />
+          {isConnected ? (
+            <Button
+              bg="rgba(255, 255, 255, 0.1)"
+              color="white"
+              px={6}
+              py={6}
+              borderRadius="full"
+              display="flex"
+              alignItems="center"
+              gap={3}
+              _hover={{
+                bg: "rgba(255, 255, 255, 0.15)",
+              }}
+            >
+              <Image
+                src="/metamask-logo.svg"
+                alt="MetaMask"
+                width="24px"
+                height="24px"
+              />
+              {account.slice(0, 6)}...{account.slice(-4)}
+            </Button>
+          ) : (
+            <Button
+              bg="linear-gradient(90deg, #F7931A 0%, #5B3BE8 100%)"
+              color="white"
+              px={8}
+              py={6}
+              borderRadius="full"
+              onClick={connectWallet}
+              _hover={{
+                transform: 'scale(1.05)',
+                bg: 'linear-gradient(90deg, #E68219 0%, #4A30D7 100%)',
+              }}
+              transition="all 0.2s"
+            >
+              Connect Wallet
+            </Button>
+          )}
         </Flex>
 
         {/* Swap Card */}
