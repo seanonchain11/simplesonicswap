@@ -220,9 +220,11 @@ export default function SwapInterface() {
         {/* Header */}
         <Flex justify="space-between" align="center" mb={12}>
           <Image
-            src="/simplesonicswaplogo.png"
+            src="/logo.svg"
             alt="SimpleSonicSwap Logo"
-            h="50px"
+            width={201.7}
+            height={40}
+            style={{ objectFit: 'contain' }}
           />
           <Image
             src={isConnected ? "/connectedbutton.png" : "/connectwalletbutton.png"}

@@ -9,6 +9,8 @@ import {
   Image,
   Text,
   VStack,
+  Grid,
+  GridItem,
 } from '@chakra-ui/react'
 import Link from 'next/link'
 
@@ -43,9 +45,11 @@ export default function Home() {
         {/* Header */}
         <Flex justify="space-between" align="center" py={6}>
           <Image
-            src="/simplesonicswaplogo.png"
+            src="/logo.svg"
             alt="SimpleSonicSwap Logo"
-            h="40px"
+            width={201.7}
+            height={40}
+            style={{ objectFit: 'contain' }}
           />
           <Link href="/app" passHref>
             <Button
@@ -66,53 +70,64 @@ export default function Home() {
         </Flex>
 
         {/* Main Content */}
-        <Box mt={32} maxW="600px">
-          <VStack align="flex-start" spacing={8}>
-            <Heading
-              as="h1"
-              fontSize="6xl"
-              fontWeight="bold"
-              lineHeight="1.2"
-            >
-              The Easiest Way to Wrap Your $S Tokens
-            </Heading>
-            <Text fontSize="xl" color="whiteAlpha.800">
-              Effortlessly convert your $S tokens to $wS tokens in seconds. 
-              No frills, no fuss—just fast, reliable swaps on the Sonic blockchain.
-            </Text>
-            <Link href="/app" passHref>
-              <Button
-                bg="linear-gradient(90deg, #F7931A 0%, #5B3BE8 100%)"
-                color="white"
-                size="lg"
-                px={8}
-                py={6}
-                borderRadius="full"
-                _hover={{
-                  transform: 'scale(1.05)',
-                  bg: 'linear-gradient(90deg, #E68219 0%, #4A30D7 100%)',
-                }}
-                transition="all 0.2s"
+        <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={8} mt={32}>
+          <GridItem>
+            <VStack align="flex-start" spacing={8}>
+              <Heading
+                as="h1"
+                fontSize="6xl"
+                fontWeight="bold"
+                lineHeight="1.2"
               >
-                Swap Now
-              </Button>
-            </Link>
-            <Text fontSize="sm" color="whiteAlpha.600" mt={4}>
-              Bridge to Sonic with any asset, from any chain, using the{' '}
-              <Link 
-                href="https://gateway.soniclabs.com/ethereum/sonic/usdc" 
-                target="_blank"
-                style={{
-                  color: '#F7931A',
-                  textDecoration: 'none',
-                }}
-              >
-                Sonic Gateway
+                The Easiest Way to Wrap Your $S Tokens
+              </Heading>
+              <Text fontSize="xl" color="whiteAlpha.800">
+                Effortlessly convert your $S tokens to $wS tokens in seconds. 
+                No frills, no fuss—just fast, reliable swaps on the Sonic blockchain.
+              </Text>
+              <Link href="/app" passHref>
+                <Button
+                  bg="linear-gradient(90deg, #F7931A 0%, #5B3BE8 100%)"
+                  color="white"
+                  size="lg"
+                  px={8}
+                  py={6}
+                  borderRadius="full"
+                  _hover={{
+                    transform: 'scale(1.05)',
+                    bg: 'linear-gradient(90deg, #E68219 0%, #4A30D7 100%)',
+                  }}
+                  transition="all 0.2s"
+                >
+                  Swap Now
+                </Button>
               </Link>
-              .
-            </Text>
-          </VStack>
-        </Box>
+              <Text fontSize="sm" color="whiteAlpha.600" mt={4}>
+                Bridge to Sonic with any asset, from any chain, using the{' '}
+                <Link 
+                  href="https://gateway.soniclabs.com/ethereum/sonic/usdc" 
+                  target="_blank"
+                  style={{
+                    color: '#F7931A',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Sonic Gateway
+                </Link>
+                .
+              </Text>
+            </VStack>
+          </GridItem>
+          <GridItem display="flex" justifyContent="center" alignItems="center">
+            <Image
+              src="/app (before connection)UI.png"
+              alt="SimpleSonicSwap Interface"
+              width="100%"
+              maxW="500px"
+              style={{ objectFit: 'contain' }}
+            />
+          </GridItem>
+        </Grid>
       </Container>
     </Box>
   )

@@ -2,10 +2,10 @@
 
 A decentralized application built on the Sonic blockchain that enables users to swap between native Sonic ($S) and wrapped Sonic ($wS) tokens using the Rayidum AMM protocol.
 
-## Websites
+## Website
 
 - Landing Page: [simplesonicswap.xyz](https://simplesonicswap.xyz)
-- App: [simplesonicswap.app](https://simplesonicswap.app)
+- App: [simplesonicswap.xyz/app](https://simplesonicswap.xyz/app)
 
 ## Features
 
@@ -20,14 +20,14 @@ A decentralized application built on the Sonic blockchain that enables users to 
 - Next.js 14
 - TypeScript
 - Chakra UI
-- Ethers.js
+- Ethers.js v6
 - Hardhat (Smart Contracts)
 - Solidity 0.8.20
 
 ## Smart Contract Addresses
 
-- Wrapped Sonic: `0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38`
-- Rayidum Router: `routeUGWgWzqBWFcrCfv8tritsqukccJPu3q5GPP3xS`
+- Wrapped Sonic: `0x3fb23c53eb22762087b4557db13c4d105eecb2b8`
+- Wrapper Contract: `${process.env.NEXT_PUBLIC_WRAPPER_ADDRESS}`
 
 ## Development Setup
 
@@ -40,7 +40,11 @@ A decentralized application built on the Sonic blockchain that enables users to 
    ```bash
    cp .env.example .env
    ```
-   Then fill in your environment variables.
+   Then fill in your environment variables:
+   ```
+   NEXT_PUBLIC_WRAPPER_ADDRESS=your_wrapper_address
+   NEXT_PUBLIC_WSONIC_ADDRESS=your_wsonic_address
+   ```
 
 3. Run development server:
    ```bash
@@ -55,9 +59,8 @@ A decentralized application built on the Sonic blockchain that enables users to 
 
 ## Deployment
 
-The application is deployed on AWS infrastructure:
-- Landing page: Static site hosting
-- App: Next.js application
+The application is deployed on Vercel:
+- Main site and app: [simplesonicswap.xyz](https://simplesonicswap.xyz)
 - Smart Contracts: Sonic Mainnet (Chain ID: 146)
 
 ## License
