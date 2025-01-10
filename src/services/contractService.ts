@@ -25,23 +25,45 @@ class ContractService {
   private wSonicContract: Contract | null = null
 
   public async connect(): Promise<void> {
-    if (typeof window === 'undefined' || !window.ethereum) {
-      throw new Error('No ethereum provider found')
+    try {
+      if (typeof window === 'undefined' || !window.ethereum) {
+        throw new Error('No ethereum provider found')
+      }
+
+      // Check if we're on the correct network
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' })
+      if (chainId !== '0x92') { // Chain ID 146 in hex
+        throw new Error('Please connect to Sonic Network')
+      }
+
+      this.provider = new BrowserProvider(window.ethereum)
+      this.signer = await this.provider.getSigner()
+
+      // Initialize contracts
+      await this.initializeContracts()
+    } catch (error) {
+      console.error('Connection error:', error)
+      throw error
     }
-
-    this.provider = new BrowserProvider(window.ethereum)
-    this.signer = await this.provider.getSigner()
-
-    // Initialize contracts
-    await this.initializeContracts()
   }
 
   private async initializeContracts(): Promise<void> {
     if (!this.signer) throw new Error('No signer available')
 
+    const wrapperAddress = process.env.NEXT_PUBLIC_WRAPPER_ADDRESS
+    const wSonicAddress = process.env.NEXT_PUBLIC_WSONIC_ADDRESS
+
+    if (!wrapperAddress || wrapperAddress.trim() === '') {
+      throw new Error('Wrapper contract address not configured')
+    }
+
+    if (!wSonicAddress || wSonicAddress.trim() === '') {
+      throw new Error('wSonic contract address not configured')
+    }
+
     // Initialize wrapper contract
     this.wrapperContract = new Contract(
-      process.env.NEXT_PUBLIC_WRAPPER_ADDRESS || '',
+      wrapperAddress,
       [
         'function wrap() payable',
         'function unwrap(uint256 amount)',
@@ -52,7 +74,7 @@ class ContractService {
 
     // Initialize wSonic contract
     this.wSonicContract = new Contract(
-      process.env.NEXT_PUBLIC_WSONIC_ADDRESS || '',
+      wSonicAddress,
       [
         'function approve(address spender, uint256 amount) returns (bool)',
         'function allowance(address owner, address spender) view returns (uint256)',
@@ -61,6 +83,11 @@ class ContractService {
       ],
       this.signer
     )
+
+    // Validate contracts are properly initialized
+    if (!this.wrapperContract || !this.wSonicContract) {
+      throw new Error('Failed to initialize contracts')
+    }
   }
 
   public async getBalances(address: string): Promise<BalanceResponse> {

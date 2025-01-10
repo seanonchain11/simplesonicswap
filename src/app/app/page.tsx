@@ -120,7 +120,11 @@ export default function SwapInterface() {
       console.error('Error approving token:', error)
       toast({
         title: 'Approval Failed',
-        description: error instanceof Error ? error.message : 'Failed to approve token spending.',
+        description: error instanceof Error 
+          ? error.message
+          : typeof error === 'object' && error && 'message' in error
+          ? String(error.message)
+          : 'Failed to approve token spending. Please make sure you are connected to Sonic Network.',
         status: 'error',
         duration: 5000,
       })
@@ -168,10 +172,16 @@ export default function SwapInterface() {
       console.error('Error connecting wallet:', error)
       toast({
         title: 'Connection Failed',
-        description: error instanceof Error ? error.message : 'Failed to connect to your wallet.',
+        description: error instanceof Error 
+          ? error.message
+          : typeof error === 'object' && error && 'message' in error
+          ? String(error.message)
+          : 'Failed to connect. Please make sure you are using MetaMask and connected to Sonic Network.',
         status: 'error',
         duration: 5000,
       })
+      setIsConnected(false)
+      setAccount('')
     }
   }
 
