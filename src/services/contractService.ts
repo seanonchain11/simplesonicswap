@@ -80,6 +80,7 @@ class ContractService {
       [
         'function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) returns (uint256[] memory amounts)',
         'function getAmountsOut(uint256 amountIn, address[] calldata path) view returns (uint256[] memory amounts)',
+        'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) returns (uint256[] memory amounts)',
       ],
       this.signer
     )
@@ -91,6 +92,7 @@ class ContractService {
         'function approve(address spender, uint256 amount) returns (bool)',
         'function allowance(address owner, address spender) view returns (uint256)',
         'function balanceOf(address account) view returns (uint256)',
+        'function transfer(address to, uint256 amount) returns (bool)',
       ],
       this.signer
     )
@@ -102,6 +104,7 @@ class ContractService {
         'function approve(address spender, uint256 amount) returns (bool)',
         'function allowance(address owner, address spender) view returns (uint256)',
         'function balanceOf(address account) view returns (uint256)',
+        'function transfer(address to, uint256 amount) returns (bool)',
       ],
       this.signer
     )
@@ -179,14 +182,15 @@ class ContractService {
     const amountOutMinWei = parseEther(amountOutMin)
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20 // 20 minutes from now
 
-    return await this.rayidumRouter.swapExactTokensForTokens(
+    // Use swapExactTokensForTokensSupportingFeeOnTransferTokens for better compatibility
+    return await this.rayidumRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
       amountInWei,
       amountOutMinWei,
       path,
       to,
       deadline,
       {
-        gasLimit: options.gasLimit || 200000,
+        gasLimit: options.gasLimit || 300000,
         ...options,
       }
     )
@@ -226,7 +230,7 @@ class ContractService {
     const amountInWei = parseEther(amountIn)
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20
 
-    const gasEstimate = await this.rayidumRouter.swapExactTokensForTokens.estimateGas(
+    const gasEstimate = await this.rayidumRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens.estimateGas(
       amountInWei,
       0, // amountOutMin = 0 for estimation
       path,
