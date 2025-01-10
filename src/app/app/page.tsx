@@ -79,7 +79,8 @@ export default function SwapInterface() {
     if (!account) return
     const newAllowance = await priceService.checkAllowance(
       isFlipped ? 'wS' : 'S',
-      account
+      account,
+      process.env.NEXT_PUBLIC_WRAPPER_ADDRESS || ''
     )
     setAllowance(newAllowance)
   }
@@ -95,7 +96,7 @@ export default function SwapInterface() {
     try {
       const success = await priceService.approve(
         isFlipped ? 'wS' : 'S',
-        WSONIC_CONTRACT
+        process.env.NEXT_PUBLIC_WRAPPER_ADDRESS || ''
       )
       if (success) {
         toast({

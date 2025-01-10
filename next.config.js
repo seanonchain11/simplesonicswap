@@ -3,29 +3,31 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    unoptimized: true, // For static exports
+    unoptimized: true,
   },
-  async redirects() {
-    return [
-      {
-        source: '/',
-        has: [
-          {
-            type: 'host',
-            value: 'simplesonicswap.app',
-          },
-        ],
-        destination: '/app',
-        permanent: true,
-      },
-    ]
-  },
+  // Enable static exports
+  output: 'standalone',
   // Optimize build output
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Enable static exports
-  output: 'export',
+  // Domain-based routing
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/:path*',
+          has: [
+            {
+              type: 'host',
+              value: 'simplesonicswap.app',
+            },
+          ],
+          destination: '/app/:path*',
+        },
+      ],
+    }
+  },
 }
 
 module.exports = nextConfig 

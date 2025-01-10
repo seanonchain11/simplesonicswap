@@ -4,7 +4,7 @@ const theme = extendTheme({
   styles: {
     global: {
       body: {
-        bg: '#0F1117',
+        bg: '#0B0F17',
         color: 'white',
       },
     },
@@ -13,7 +13,7 @@ const theme = extendTheme({
     brand: {
       primary: '#F7931A',
       secondary: '#5B3BE8',
-      background: '#0F1117',
+      background: '#0B0F17',
       card: 'rgba(255, 255, 255, 0.1)',
       text: {
         primary: '#FFFFFF',
@@ -24,7 +24,6 @@ const theme = extendTheme({
   components: {
     Button: {
       baseStyle: {
-        borderRadius: 'xl',
         fontWeight: 'semibold',
       },
       variants: {
@@ -33,31 +32,23 @@ const theme = extendTheme({
           color: 'white',
           _hover: {
             bgGradient: 'linear(to-r, #E68219, #4A30D7)',
-            _disabled: {
-              bgGradient: 'linear(to-r, brand.primary, brand.secondary)',
-            },
+            transform: 'scale(1.05)',
+          },
+          _active: {
+            bgGradient: 'linear(to-r, #D67218, #3925C6)',
           },
         },
       },
     },
-    Input: {
-      variants: {
-        filled: {
-          field: {
-            bg: 'brand.card',
-            borderRadius: 'xl',
-            _hover: {
-              bg: 'brand.card',
-            },
-            _focus: {
-              bg: 'brand.card',
-              borderColor: 'brand.primary',
-            },
-          },
-        },
+    Heading: {
+      baseStyle: {
+        color: 'white',
+        fontWeight: 'bold',
       },
-      defaultProps: {
-        variant: 'filled',
+    },
+    Text: {
+      baseStyle: {
+        color: 'whiteAlpha.900',
       },
     },
   },

@@ -1,240 +1,145 @@
-import { ethers } from 'ethers'
-import SonicTokenWrapperABI from '@/contracts/abis/SonicTokenWrapper.json'
-import { monitoringService } from './monitoringService'
-
-declare global {
-  interface Window {
-    ethereum?: any
-  }
-}
-
-export const WSONIC_ADDRESS = '0x039e2fB66102314Ce7b64Ce5Ce3E5183bc94aD38'
-export const WRAPPER_ADDRESS = '0x' // TODO: Add deployed contract address
+import {
+  Contract,
+  BrowserProvider,
+  JsonRpcSigner,
+  formatEther,
+  parseEther,
+  type ContractTransactionResponse,
+  type TransactionReceipt,
+} from 'ethers'
 
 interface ContractCallOptions {
   gasLimit?: number
-  value?: string
+  gasPrice?: string
+}
+
+interface BalanceResponse {
+  sonic: string
+  wSonic: string
 }
 
 class ContractService {
-  private provider: ethers.providers.Web3Provider | null = null
-  private signer: ethers.Signer | null = null
-  private wrapperContract: ethers.Contract | null = null
-  private wSonicContract: ethers.Contract | null = null
+  private provider: BrowserProvider | null = null
+  private signer: JsonRpcSigner | null = null
+  private wrapperContract: Contract | null = null
+  private wSonicContract: Contract | null = null
 
-  constructor() {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      this.provider = new ethers.providers.Web3Provider(window.ethereum)
-      this.initializeContracts()
+  public async connect(): Promise<void> {
+    if (typeof window === 'undefined' || !window.ethereum) {
+      throw new Error('No ethereum provider found')
     }
+
+    this.provider = new BrowserProvider(window.ethereum)
+    this.signer = await this.provider.getSigner()
+
+    // Initialize contracts
+    await this.initializeContracts()
   }
 
-  private async initializeContracts() {
-    if (!this.provider) return
+  private async initializeContracts(): Promise<void> {
+    if (!this.signer) throw new Error('No signer available')
 
-    try {
-      this.signer = this.provider.getSigner()
-      
-      // Initialize wrapper contract
-      this.wrapperContract = new ethers.Contract(
-        WRAPPER_ADDRESS,
-        SonicTokenWrapperABI.abi,
-        this.signer
-      )
+    this.wrapperContract = new Contract(
+      process.env.NEXT_PUBLIC_WRAPPER_ADDRESS || '',
+      ['function wrap() payable', 'function unwrap(uint256 amount)'],
+      this.signer
+    )
 
-      // Initialize wSonic contract (ERC20)
-      this.wSonicContract = new ethers.Contract(
-        WSONIC_ADDRESS,
-        [
-          'function approve(address spender, uint256 amount) public returns (bool)',
-          'function allowance(address owner, address spender) public view returns (uint256)',
-          'function balanceOf(address account) public view returns (uint256)',
-        ],
-        this.signer
-      )
-
-      monitoringService.trackEvent('Contracts initialized', {
-        wrapperAddress: WRAPPER_ADDRESS,
-        wSonicAddress: WSONIC_ADDRESS,
-      })
-    } catch (error) {
-      monitoringService.trackError(error, 'initializeContracts')
-      throw error
-    }
+    this.wSonicContract = new Contract(
+      process.env.NEXT_PUBLIC_WSONIC_ADDRESS || '',
+      [
+        'function approve(address spender, uint256 amount) returns (bool)',
+        'function allowance(address owner, address spender) view returns (uint256)',
+        'function balanceOf(address account) view returns (uint256)',
+      ],
+      this.signer
+    )
   }
 
-  public async connect(): Promise<string> {
-    if (!this.provider) throw new Error('Provider not available')
-
-    try {
-      const accounts = await this.provider.send('eth_requestAccounts', [])
-      this.signer = this.provider.getSigner()
-      await this.initializeContracts()
-      
-      monitoringService.trackEvent('Wallet connected', {
-        address: accounts[0],
-      })
-
-      return accounts[0]
-    } catch (error) {
-      monitoringService.trackError(error, 'connect')
-      throw error
-    }
-  }
-
-  public async getBalances(address: string) {
+  public async getBalances(address: string): Promise<BalanceResponse> {
     if (!this.provider || !this.wSonicContract) {
-      throw new Error('Provider or contract not initialized')
+      throw new Error('Provider or contracts not initialized')
     }
 
-    try {
-      const sonicBalance = await this.provider.getBalance(address)
-      const wSonicBalance = await this.wSonicContract.balanceOf(address)
+    const [sonicBalance, wSonicBalance] = await Promise.all([
+      this.provider.getBalance(address),
+      this.wSonicContract.balanceOf(address),
+    ])
 
-      monitoringService.trackEvent('Balances fetched', {
-        address,
-        sonic: ethers.utils.formatEther(sonicBalance),
-        wSonic: ethers.utils.formatEther(wSonicBalance),
-      })
-
-      return {
-        sonic: ethers.utils.formatEther(sonicBalance),
-        wSonic: ethers.utils.formatEther(wSonicBalance),
-      }
-    } catch (error) {
-      monitoringService.trackError(error, 'getBalances')
-      throw error
+    return {
+      sonic: formatEther(sonicBalance),
+      wSonic: formatEther(wSonicBalance),
     }
   }
 
-  public async checkAllowance(owner: string): Promise<string> {
+  public async getAllowance(owner: string, spender: string): Promise<string> {
     if (!this.wSonicContract) throw new Error('Contract not initialized')
 
-    try {
-      const allowance = await this.wSonicContract.allowance(owner, WRAPPER_ADDRESS)
-      return ethers.utils.formatEther(allowance)
-    } catch (error) {
-      monitoringService.trackError(error, 'checkAllowance')
-      throw error
-    }
+    const allowance = await this.wSonicContract.allowance(owner, spender)
+    return formatEther(allowance)
   }
 
-  public async approve(amount: string): Promise<ethers.ContractTransaction> {
+  public async approve(
+    spender: string,
+    amount: string
+  ): Promise<ContractTransactionResponse> {
     if (!this.wSonicContract) throw new Error('Contract not initialized')
 
-    try {
-      const amountWei = ethers.utils.parseEther(amount)
-      const tx = await this.wSonicContract.approve(WRAPPER_ADDRESS, amountWei)
-      
-      monitoringService.trackTransaction(tx.hash)
-      
-      return tx
-    } catch (error) {
-      monitoringService.trackError(error, 'approve')
-      throw error
-    }
+    const amountWei = parseEther(amount)
+    return await this.wSonicContract.approve(spender, amountWei)
   }
 
-  public async wrap(amount: string, options: ContractCallOptions = {}): Promise<ethers.ContractTransaction> {
+  public async wrap(
+    amount: string,
+    options: ContractCallOptions = {}
+  ): Promise<ContractTransactionResponse> {
     if (!this.wrapperContract) throw new Error('Contract not initialized')
 
-    try {
-      const amountWei = ethers.utils.parseEther(amount)
-      const tx = await this.wrapperContract.wrap({
-        ...options,
+    const amountWei = parseEther(amount)
+    return await this.wrapperContract.wrap({
+      value: amountWei,
+      ...options,
+    })
+  }
+
+  public async unwrap(
+    amount: string,
+    options: ContractCallOptions = {}
+  ): Promise<ContractTransactionResponse> {
+    if (!this.wrapperContract) throw new Error('Contract not initialized')
+
+    const amountWei = parseEther(amount)
+    return await this.wrapperContract.unwrap(amountWei, {
+      ...options,
+    })
+  }
+
+  public async estimateGas(
+    amount: string,
+    isWrap: boolean
+  ): Promise<{ gasEstimate: bigint; totalCost: string }> {
+    if (!this.wrapperContract || !this.provider)
+      throw new Error('Contract not initialized')
+
+    const amountWei = parseEther(amount)
+    let gasEstimate: bigint
+
+    if (isWrap) {
+      gasEstimate = await this.wrapperContract.wrap.estimateGas({
         value: amountWei,
       })
-
-      monitoringService.trackTransaction(tx.hash)
-      
-      return tx
-    } catch (error) {
-      monitoringService.trackError(error, 'wrap')
-      throw error
-    }
-  }
-
-  public async unwrap(amount: string, options: ContractCallOptions = {}): Promise<ethers.ContractTransaction> {
-    if (!this.wrapperContract) throw new Error('Contract not initialized')
-
-    try {
-      const amountWei = ethers.utils.parseEther(amount)
-      const tx = await this.wrapperContract.unwrap(amountWei, options)
-
-      monitoringService.trackTransaction(tx.hash)
-      
-      return tx
-    } catch (error) {
-      monitoringService.trackError(error, 'unwrap')
-      throw error
-    }
-  }
-
-  public async estimateGas(operation: 'wrap' | 'unwrap', amount: string): Promise<string> {
-    if (!this.wrapperContract || !this.provider) {
-      throw new Error('Contract or provider not initialized')
+    } else {
+      gasEstimate = await this.wrapperContract.unwrap.estimateGas(amountWei)
     }
 
-    try {
-      const amountWei = ethers.utils.parseEther(amount)
-      let gasEstimate: ethers.BigNumber
+    const gasPrice = await this.provider.getFeeData()
+    const gasCost = gasEstimate * (gasPrice.gasPrice || BigInt(0))
 
-      if (operation === 'wrap') {
-        gasEstimate = await this.wrapperContract.estimateGas.wrap({
-          value: amountWei,
-        })
-      } else {
-        gasEstimate = await this.wrapperContract.estimateGas.unwrap(amountWei)
-      }
-
-      // Add 20% buffer for safety
-      const gasWithBuffer = gasEstimate.mul(120).div(100)
-      const gasPrice = await this.provider.getGasPrice()
-      const gasCost = gasWithBuffer.mul(gasPrice)
-
-      monitoringService.trackEvent('Gas estimated', {
-        operation,
-        amount,
-        gasEstimate: gasEstimate.toString(),
-        gasPrice: gasPrice.toString(),
-        totalCost: ethers.utils.formatEther(gasCost),
-      })
-
-      return ethers.utils.formatEther(gasCost)
-    } catch (error) {
-      monitoringService.trackError(error, 'estimateGas')
-      throw error
+    return {
+      gasEstimate,
+      totalCost: formatEther(gasCost),
     }
-  }
-
-  public async getFee(): Promise<number> {
-    if (!this.wrapperContract) throw new Error('Contract not initialized')
-
-    try {
-      const fee = await this.wrapperContract.fee()
-      return fee.toNumber()
-    } catch (error) {
-      monitoringService.trackError(error, 'getFee')
-      throw error
-    }
-  }
-
-  public onAccountChange(callback: (accounts: string[]) => void) {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      window.ethereum.on('accountsChanged', callback)
-      return () => window.ethereum.removeListener('accountsChanged', callback)
-    }
-    return () => {}
-  }
-
-  public onChainChange(callback: (chainId: string) => void) {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      window.ethereum.on('chainChanged', callback)
-      return () => window.ethereum.removeListener('chainChanged', callback)
-    }
-    return () => {}
   }
 }
 
-export const contractService = new ContractService()
-export default contractService 
+export default new ContractService() 

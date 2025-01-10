@@ -1,4 +1,4 @@
-import { ethers } from 'ethers'
+import { MaxUint256 } from 'ethers'
 import contractService from './contractService'
 
 export interface PriceUpdate {
@@ -7,35 +7,30 @@ export interface PriceUpdate {
   estimatedGas: string
 }
 
+type PriceUpdateCallback = (update: PriceUpdate) => void
+
 class PriceService {
-  private listeners: ((update: PriceUpdate) => void)[] = []
-  private currentFee: number = 30 // Default 0.3%
+  private subscribers: PriceUpdateCallback[] = []
+  private currentFee: number = 0.3 // 0.3% fee
 
   constructor() {
-    this.initializeFee()
+    this.initialize()
   }
 
-  private async initializeFee() {
-    try {
-      this.currentFee = await contractService.getFee()
-    } catch (error) {
-      console.error('Error initializing fee:', error)
-    }
+  private async initialize() {
+    // Fee is fixed at 0.3%
+    this.currentFee = 0.3
   }
 
-  public subscribe(callback: (update: PriceUpdate) => void) {
-    this.listeners.push(callback)
+  public subscribe(callback: PriceUpdateCallback): () => void {
+    this.subscribers.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(listener => listener !== callback)
+      this.subscribers = this.subscribers.filter((cb) => cb !== callback)
     }
-  }
-
-  private notifyListeners(update: PriceUpdate) {
-    this.listeners.forEach(listener => listener(update))
   }
 
   public async getPrice(amount: string, isWrap: boolean): Promise<PriceUpdate> {
-    if (!amount) {
+    if (!amount || parseFloat(amount) === 0) {
       return {
         price: '0',
         priceImpact: 0,
@@ -44,27 +39,18 @@ class PriceService {
     }
 
     try {
-      // Get gas estimate
-      const estimatedGas = await contractService.estimateGas(
-        isWrap ? 'wrap' : 'unwrap',
-        amount
-      )
+      const { totalCost } = await contractService.estimateGas(amount, isWrap)
 
-      // Calculate price with fee
-      const amountNum = parseFloat(amount)
-      const feeAmount = (amountNum * this.currentFee) / 10000
-      const netAmount = amountNum - feeAmount
-
-      // Calculate price impact (this would be replaced with actual pool calculations)
-      const priceImpact = Math.min(amountNum * 0.001, 5) // Simplified for demo
+      // Calculate price impact (fixed 0.3% fee)
+      const priceImpact = 0.3
 
       return {
-        price: netAmount.toString(),
+        price: amount,
         priceImpact,
-        estimatedGas,
+        estimatedGas: totalCost,
       }
     } catch (error) {
-      console.error('Error calculating price:', error)
+      console.error('Error getting price:', error)
       return {
         price: '0',
         priceImpact: 0,
@@ -73,20 +59,22 @@ class PriceService {
     }
   }
 
-  public async checkAllowance(token: string, owner: string): Promise<string> {
-    try {
-      return await contractService.checkAllowance(owner)
-    } catch (error) {
-      console.error('Error checking allowance:', error)
-      return '0'
-    }
+  public async checkAllowance(
+    token: 'S' | 'wS',
+    owner: string,
+    spender: string
+  ): Promise<string> {
+    return await contractService.getAllowance(owner, spender)
   }
 
-  public async approve(token: string, amount: string): Promise<boolean> {
+  public async approve(
+    token: 'S' | 'wS',
+    spender: string
+  ): Promise<boolean> {
     try {
-      const tx = await contractService.approve(amount)
-      await tx.wait()
-      return true
+      const tx = await contractService.approve(spender, MaxUint256.toString())
+      const receipt = await tx.wait()
+      return receipt !== null
     } catch (error) {
       console.error('Error approving token:', error)
       return false
@@ -94,5 +82,4 @@ class PriceService {
   }
 }
 
-export const priceService = new PriceService()
-export default priceService 
+export default new PriceService() 
