@@ -119,13 +119,20 @@ export default function Home() {
             </VStack>
           </GridItem>
           <GridItem display="flex" justifyContent="center" alignItems="center">
-            <Image
-              src="/app (before connection)UI.png"
-              alt="SimpleSonicSwap Interface"
-              width="100%"
-              maxW="500px"
-              style={{ objectFit: 'contain' }}
-            />
+            <Box
+              bg="rgba(13, 15, 23, 0.5)"
+              borderRadius="24px"
+              p={6}
+              boxShadow="0px 4px 24px rgba(0, 0, 0, 0.2)"
+            >
+              <Image
+                src="/swap-interface-preview.png"
+                alt="SimpleSonicSwap Interface"
+                width="400px"
+                height="auto"
+                style={{ objectFit: 'contain' }}
+              />
+            </Box>
           </GridItem>
         </Grid>
       </Container>
