@@ -192,23 +192,34 @@ export default function SwapInterface() {
   const handleSwapConfirm = async () => {
     setIsSwapping(true)
     try {
-      const txHash = '0x' + Math.random().toString(16).slice(2)
+      const tx = await contractService.swap(
+        amount,
+        priceInfo.price, // Use the estimated output amount as minimum
+        isFlipped ? 'wS' : 'S',
+        isFlipped ? 'S' : 'wS',
+        account,
+        { gasLimit: 300000 }
+      )
+      
       const newTx: Transaction = {
-        id: txHash,
+        id: tx.hash,
         type: isFlipped ? 'unwrap' : 'wrap',
         amount,
         status: 'pending',
         timestamp: Date.now(),
-        hash: txHash,
+        hash: tx.hash,
       }
       
       setTransactions([newTx, ...transactions])
       
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      const receipt = await tx.wait()
+      if (!receipt) {
+        throw new Error('Transaction failed')
+      }
       
       setTransactions(prev =>
         prev.map(tx =>
-          tx.id === txHash ? { ...tx, status: 'completed' } : tx
+          tx.id === receipt.hash ? { ...tx, status: 'completed' } : tx
         )
       )
       
@@ -221,11 +232,16 @@ export default function SwapInterface() {
       
       setAmount('')
       onConfirmClose()
+      await fetchBalances() // Refresh balances after swap
     } catch (error) {
       console.error('Error during swap:', error)
       toast({
         title: 'Swap Failed',
-        description: 'An error occurred during the swap.',
+        description: error instanceof Error 
+          ? error.message
+          : typeof error === 'object' && error && 'message' in error
+          ? String(error.message)
+          : 'An error occurred during the swap.',
         status: 'error',
         duration: 5000,
       })

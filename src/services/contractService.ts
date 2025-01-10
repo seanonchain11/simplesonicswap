@@ -21,7 +21,8 @@ interface BalanceResponse {
 class ContractService {
   private provider: BrowserProvider | null = null
   private signer: JsonRpcSigner | null = null
-  private wrapperContract: Contract | null = null
+  private rayidumRouter: Contract | null = null
+  private sonicContract: Contract | null = null
   private wSonicContract: Contract | null = null
 
   public async connect(): Promise<void> {
@@ -47,26 +48,48 @@ class ContractService {
     }
   }
 
+  public getSigner(): JsonRpcSigner {
+    if (!this.signer) {
+      throw new Error('Signer not initialized. Please connect first.')
+    }
+    return this.signer
+  }
+
   private async initializeContracts(): Promise<void> {
     if (!this.signer) throw new Error('No signer available')
 
-    const wrapperAddress = process.env.NEXT_PUBLIC_WRAPPER_ADDRESS
+    const rayidumRouterAddress = process.env.NEXT_PUBLIC_RAYIDUM_ROUTER
+    const sonicAddress = process.env.NEXT_PUBLIC_SONIC_ADDRESS
     const wSonicAddress = process.env.NEXT_PUBLIC_WSONIC_ADDRESS
 
-    if (!wrapperAddress || wrapperAddress.trim() === '') {
-      throw new Error('Wrapper contract address not configured')
+    if (!rayidumRouterAddress || rayidumRouterAddress.trim() === '') {
+      throw new Error('Rayidum router address not configured')
+    }
+
+    if (!sonicAddress || sonicAddress.trim() === '') {
+      throw new Error('Sonic token address not configured')
     }
 
     if (!wSonicAddress || wSonicAddress.trim() === '') {
-      throw new Error('wSonic contract address not configured')
+      throw new Error('wSonic token address not configured')
     }
 
-    // Initialize wrapper contract
-    this.wrapperContract = new Contract(
-      wrapperAddress,
+    // Initialize Rayidum router contract
+    this.rayidumRouter = new Contract(
+      rayidumRouterAddress,
       [
-        'function wrap() payable',
-        'function unwrap(uint256 amount)',
+        'function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] calldata path, address to, uint256 deadline) returns (uint256[] memory amounts)',
+        'function getAmountsOut(uint256 amountIn, address[] calldata path) view returns (uint256[] memory amounts)',
+      ],
+      this.signer
+    )
+
+    // Initialize Sonic token contract
+    this.sonicContract = new Contract(
+      sonicAddress,
+      [
+        'function approve(address spender, uint256 amount) returns (bool)',
+        'function allowance(address owner, address spender) view returns (uint256)',
         'function balanceOf(address account) view returns (uint256)',
       ],
       this.signer
@@ -79,24 +102,23 @@ class ContractService {
         'function approve(address spender, uint256 amount) returns (bool)',
         'function allowance(address owner, address spender) view returns (uint256)',
         'function balanceOf(address account) view returns (uint256)',
-        'function transfer(address to, uint256 amount) returns (bool)',
       ],
       this.signer
     )
 
     // Validate contracts are properly initialized
-    if (!this.wrapperContract || !this.wSonicContract) {
+    if (!this.rayidumRouter || !this.sonicContract || !this.wSonicContract) {
       throw new Error('Failed to initialize contracts')
     }
   }
 
   public async getBalances(address: string): Promise<BalanceResponse> {
-    if (!this.provider || !this.wSonicContract) {
-      throw new Error('Provider or contracts not initialized')
+    if (!this.sonicContract || !this.wSonicContract) {
+      throw new Error('Contracts not initialized')
     }
 
     const [sonicBalance, wSonicBalance] = await Promise.all([
-      this.provider.getBalance(address),
+      this.sonicContract.balanceOf(address),
       this.wSonicContract.balanceOf(address),
     ])
 
@@ -106,24 +128,27 @@ class ContractService {
     }
   }
 
-  public async getAllowance(owner: string, spender: string): Promise<string> {
-    if (!this.wSonicContract) throw new Error('Contract not initialized')
+  public async getAllowance(owner: string, spender: string, tokenType: 'S' | 'wS'): Promise<string> {
+    const contract = tokenType === 'S' ? this.sonicContract : this.wSonicContract
+    if (!contract) throw new Error('Contract not initialized')
 
-    const allowance = await this.wSonicContract.allowance(owner, spender)
+    const allowance = await contract.allowance(owner, spender)
     return formatEther(allowance)
   }
 
   public async approve(
     spender: string,
-    amount: string
+    amount: string,
+    tokenType: 'S' | 'wS'
   ): Promise<ContractTransactionResponse> {
-    if (!this.wSonicContract) {
+    const contract = tokenType === 'S' ? this.sonicContract : this.wSonicContract
+    if (!contract) {
       throw new Error('Contract not initialized')
     }
 
     try {
       const amountWei = parseEther(amount)
-      const tx = await this.wSonicContract.approve(spender, amountWei, {
+      const tx = await contract.approve(spender, amountWei, {
         gasLimit: 100000 // Add explicit gas limit
       })
       return tx
@@ -133,48 +158,81 @@ class ContractService {
     }
   }
 
-  public async wrap(
-    amount: string,
+  public async swap(
+    amountIn: string,
+    amountOutMin: string,
+    fromToken: 'S' | 'wS',
+    toToken: 'S' | 'wS',
+    to: string,
     options: ContractCallOptions = {}
   ): Promise<ContractTransactionResponse> {
-    if (!this.wrapperContract) throw new Error('Contract not initialized')
+    if (!this.rayidumRouter || !this.sonicContract || !this.wSonicContract) {
+      throw new Error('Contracts not initialized')
+    }
 
-    const amountWei = parseEther(amount)
-    return await this.wrapperContract.wrap({
-      value: amountWei,
-      ...options,
-    })
+    const path = [
+      fromToken === 'S' ? process.env.NEXT_PUBLIC_SONIC_ADDRESS! : process.env.NEXT_PUBLIC_WSONIC_ADDRESS!,
+      toToken === 'S' ? process.env.NEXT_PUBLIC_SONIC_ADDRESS! : process.env.NEXT_PUBLIC_WSONIC_ADDRESS!,
+    ]
+
+    const amountInWei = parseEther(amountIn)
+    const amountOutMinWei = parseEther(amountOutMin)
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20 // 20 minutes from now
+
+    return await this.rayidumRouter.swapExactTokensForTokens(
+      amountInWei,
+      amountOutMinWei,
+      path,
+      to,
+      deadline,
+      {
+        gasLimit: options.gasLimit || 200000,
+        ...options,
+      }
+    )
   }
 
-  public async unwrap(
-    amount: string,
-    options: ContractCallOptions = {}
-  ): Promise<ContractTransactionResponse> {
-    if (!this.wrapperContract) throw new Error('Contract not initialized')
+  public async getAmountOut(
+    amountIn: string,
+    fromToken: 'S' | 'wS',
+    toToken: 'S' | 'wS'
+  ): Promise<string> {
+    if (!this.rayidumRouter) throw new Error('Router not initialized')
 
-    const amountWei = parseEther(amount)
-    return await this.wrapperContract.unwrap(amountWei, {
-      ...options,
-    })
+    const path = [
+      fromToken === 'S' ? process.env.NEXT_PUBLIC_SONIC_ADDRESS! : process.env.NEXT_PUBLIC_WSONIC_ADDRESS!,
+      toToken === 'S' ? process.env.NEXT_PUBLIC_SONIC_ADDRESS! : process.env.NEXT_PUBLIC_WSONIC_ADDRESS!,
+    ]
+
+    const amountInWei = parseEther(amountIn)
+    const amounts = await this.rayidumRouter.getAmountsOut(amountInWei, path)
+    return formatEther(amounts[1])
   }
 
   public async estimateGas(
-    amount: string,
-    isWrap: boolean
+    amountIn: string,
+    fromToken: 'S' | 'wS',
+    toToken: 'S' | 'wS',
+    to: string
   ): Promise<{ gasEstimate: bigint; totalCost: string }> {
-    if (!this.wrapperContract || !this.provider)
+    if (!this.rayidumRouter || !this.provider)
       throw new Error('Contract not initialized')
 
-    const amountWei = parseEther(amount)
-    let gasEstimate: bigint
+    const path = [
+      fromToken === 'S' ? process.env.NEXT_PUBLIC_SONIC_ADDRESS! : process.env.NEXT_PUBLIC_WSONIC_ADDRESS!,
+      toToken === 'S' ? process.env.NEXT_PUBLIC_SONIC_ADDRESS! : process.env.NEXT_PUBLIC_WSONIC_ADDRESS!,
+    ]
 
-    if (isWrap) {
-      gasEstimate = await this.wrapperContract.wrap.estimateGas({
-        value: amountWei,
-      })
-    } else {
-      gasEstimate = await this.wrapperContract.unwrap.estimateGas(amountWei)
-    }
+    const amountInWei = parseEther(amountIn)
+    const deadline = Math.floor(Date.now() / 1000) + 60 * 20
+
+    const gasEstimate = await this.rayidumRouter.swapExactTokensForTokens.estimateGas(
+      amountInWei,
+      0, // amountOutMin = 0 for estimation
+      path,
+      to,
+      deadline
+    )
 
     const gasPrice = await this.provider.getFeeData()
     const gasCost = gasEstimate * (gasPrice.gasPrice || BigInt(0))
