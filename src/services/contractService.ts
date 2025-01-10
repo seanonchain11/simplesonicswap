@@ -39,18 +39,25 @@ class ContractService {
   private async initializeContracts(): Promise<void> {
     if (!this.signer) throw new Error('No signer available')
 
+    // Initialize wrapper contract
     this.wrapperContract = new Contract(
       process.env.NEXT_PUBLIC_WRAPPER_ADDRESS || '',
-      ['function wrap() payable', 'function unwrap(uint256 amount)'],
+      [
+        'function wrap() payable',
+        'function unwrap(uint256 amount)',
+        'function balanceOf(address account) view returns (uint256)',
+      ],
       this.signer
     )
 
+    // Initialize wSonic contract
     this.wSonicContract = new Contract(
       process.env.NEXT_PUBLIC_WSONIC_ADDRESS || '',
       [
         'function approve(address spender, uint256 amount) returns (bool)',
         'function allowance(address owner, address spender) view returns (uint256)',
         'function balanceOf(address account) view returns (uint256)',
+        'function transfer(address to, uint256 amount) returns (bool)',
       ],
       this.signer
     )
@@ -83,10 +90,20 @@ class ContractService {
     spender: string,
     amount: string
   ): Promise<ContractTransactionResponse> {
-    if (!this.wSonicContract) throw new Error('Contract not initialized')
+    if (!this.wSonicContract) {
+      throw new Error('Contract not initialized')
+    }
 
-    const amountWei = parseEther(amount)
-    return await this.wSonicContract.approve(spender, amountWei)
+    try {
+      const amountWei = parseEther(amount)
+      const tx = await this.wSonicContract.approve(spender, amountWei, {
+        gasLimit: 100000 // Add explicit gas limit
+      })
+      return tx
+    } catch (error) {
+      console.error('Error in approve:', error)
+      throw error
+    }
   }
 
   public async wrap(

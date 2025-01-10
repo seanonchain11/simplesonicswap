@@ -97,7 +97,7 @@ export default function TokenInput({
             whileTap={{ scale: 0.95 }}
           >
             <Image
-              src={`/tokens/${token.toLowerCase()}.svg`}
+              src={`/${token}_tokenicon.svg`}
               alt={token}
               boxSize="24px"
             />
