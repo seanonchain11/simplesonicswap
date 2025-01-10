@@ -212,7 +212,7 @@ export default function SwapInterface() {
     <Box
       minH="100vh"
       position="relative"
-      bgColor="#0E0E0E"
+      bg="radial-gradient(circle at center, #0E0E0E 20%, #0E0E0E 100%)"
       color="white"
       overflow="hidden"
     >
