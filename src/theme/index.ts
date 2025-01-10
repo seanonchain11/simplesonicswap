@@ -4,7 +4,7 @@ const theme = extendTheme({
   styles: {
     global: {
       body: {
-        bg: '#0B0F17',
+        bg: '#0E0E0E',
         color: 'white',
       },
     },
@@ -13,7 +13,7 @@ const theme = extendTheme({
     brand: {
       primary: '#F7931A',
       secondary: '#5B3BE8',
-      background: '#0B0F17',
+      background: '#0E0E0E',
       card: 'rgba(255, 255, 255, 0.1)',
       text: {
         primary: '#FFFFFF',

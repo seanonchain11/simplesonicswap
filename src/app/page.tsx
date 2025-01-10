@@ -17,7 +17,7 @@ export default function Home() {
     <Box
       minH="100vh"
       position="relative"
-      bgColor="#0B0F17"
+      bgColor="#0E0E0E"
       color="white"
       overflow="hidden"
     >

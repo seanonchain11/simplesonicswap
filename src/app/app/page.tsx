@@ -212,10 +212,9 @@ export default function SwapInterface() {
     <Box
       minH="100vh"
       position="relative"
-      bgImage="url('/appbackground.png')"
-      bgSize="cover"
-      bgPosition="center"
-      bgRepeat="no-repeat"
+      bgColor="#0E0E0E"
+      color="white"
+      overflow="hidden"
     >
       <Container maxW="container.xl" py={8}>
         {/* Header */}
