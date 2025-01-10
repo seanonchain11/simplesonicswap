@@ -80,6 +80,16 @@ class PriceService {
       return false
     }
   }
+
+  public async getBalance(token: 'S' | 'wS', address: string): Promise<string> {
+    try {
+      const balances = await contractService.getBalances(address)
+      return token === 'S' ? balances.sonic : balances.wSonic
+    } catch (error) {
+      console.error('Error getting balance:', error)
+      return '0'
+    }
+  }
 }
 
 export default new PriceService() 

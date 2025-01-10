@@ -18,6 +18,7 @@ import ConfirmationModal from '@/components/swap/ConfirmationModal'
 import TransactionHistory from '@/components/swap/TransactionHistory'
 import TokenApproval from '@/components/swap/TokenApproval'
 import priceService, { PriceUpdate } from '@/services/priceService'
+import contractService from '@/services/contractService'
 
 interface Transaction {
   id: string
@@ -40,6 +41,8 @@ export default function SwapInterface() {
   const [isApproving, setIsApproving] = useState(false)
   const [allowance, setAllowance] = useState('0')
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [sonicBalance, setSonicBalance] = useState('0')
+  const [wrappedSonicBalance, setWrappedSonicBalance] = useState('0')
   const [priceInfo, setPriceInfo] = useState<PriceUpdate>({
     price: '0',
     priceImpact: 0,
@@ -61,8 +64,9 @@ export default function SwapInterface() {
   const toast = useToast()
 
   useEffect(() => {
-    if (account && !isFlipped) {
+    if (account) {
       checkAllowance()
+      fetchBalances()
     }
   }, [account, isFlipped])
 
@@ -95,6 +99,9 @@ export default function SwapInterface() {
     if (!account) return
     setIsApproving(true)
     try {
+      // Connect to contract first
+      await contractService.connect()
+      
       const success = await priceService.approve(
         isFlipped ? 'wS' : 'S',
         process.env.NEXT_PUBLIC_WRAPPER_ADDRESS || ''
@@ -107,12 +114,13 @@ export default function SwapInterface() {
           duration: 5000,
         })
         await checkAllowance()
+        await fetchBalances() // Refresh balances after approval
       }
     } catch (error) {
       console.error('Error approving token:', error)
       toast({
         title: 'Approval Failed',
-        description: 'Failed to approve token spending.',
+        description: error instanceof Error ? error.message : 'Failed to approve token spending.',
         status: 'error',
         duration: 5000,
       })
@@ -132,8 +140,15 @@ export default function SwapInterface() {
         const accounts = await window.ethereum.request({
           method: 'eth_requestAccounts',
         })
+        
+        // Connect to contracts
+        await contractService.connect()
+        
         setAccount(accounts[0])
         setIsConnected(true)
+        
+        // Fetch initial balances
+        await fetchBalances()
         
         toast({
           title: 'Wallet Connected',
@@ -153,7 +168,7 @@ export default function SwapInterface() {
       console.error('Error connecting wallet:', error)
       toast({
         title: 'Connection Failed',
-        description: 'Failed to connect to your wallet.',
+        description: error instanceof Error ? error.message : 'Failed to connect to your wallet.',
         status: 'error',
         duration: 5000,
       })
@@ -206,6 +221,24 @@ export default function SwapInterface() {
       })
     } finally {
       setIsSwapping(false)
+    }
+  }
+
+  const fetchBalances = async () => {
+    if (!account) return
+    try {
+      const sBalance = await priceService.getBalance('S', account)
+      const wsBalance = await priceService.getBalance('wS', account)
+      setSonicBalance(sBalance)
+      setWrappedSonicBalance(wsBalance)
+    } catch (error) {
+      console.error('Error fetching balances:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch token balances.',
+        status: 'error',
+        duration: 5000,
+      })
     }
   }
 
@@ -284,8 +317,8 @@ export default function SwapInterface() {
                 token={isFlipped ? 'wS' : 'S'}
                 value={amount}
                 onChange={handleAmountChange}
-                balance="1000.00"
-                onMaxClick={() => handleAmountChange('1000.00')}
+                balance={isConnected ? (isFlipped ? wrappedSonicBalance : sonicBalance) : '-'}
+                onMaxClick={isConnected ? () => handleAmountChange(isFlipped ? wrappedSonicBalance : sonicBalance) : undefined}
               />
               
               <Box cursor="pointer" onClick={handleFlip}>
@@ -303,7 +336,7 @@ export default function SwapInterface() {
                 token={isFlipped ? 'S' : 'wS'}
                 value={amount}
                 onChange={() => {}}
-                balance="1000.00"
+                balance={isConnected ? (isFlipped ? sonicBalance : wrappedSonicBalance) : '-'}
                 isReadOnly
               />
 
